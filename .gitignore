@@ -1,0 +1,11 @@
+# Никогда не коммить секреты!
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
