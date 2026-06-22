@@ -328,17 +328,53 @@ def build_app(config: Config, bot_wallet: WalletData) -> Application:  # type: i
 
 
 def main() -> None:
-    """Start the bot."""
+    """Start the bot.
+
+    Единственный обязательный параметр — TELEGRAM_BOT_TOKEN в .env.
+    Всё остальное настраивается автоматически:
+      - TON кошелёк бота создаётся при первом запуске
+      - Если REFERRER_TON_ADDRESS не задан, используется адрес кошелька бота
+    """
     config = load_config()
 
-    # Ensure the bot wallet exists (creates one on first run)
+    # Создаём или загружаем кошелёк бота (автоматически при первом запуске)
     bot_wallet = ensure_wallet()
 
-    log.info("Бот запущен. Адрес кошелька: %s", bot_wallet.address_bounceable)
+    # Если владелец не задал свой TON адрес — комиссии идут на кошелёк бота
+    if not config.referrer_address:
+        import dataclasses
+        config = dataclasses.replace(config, referrer_address=bot_wallet.address_hex)
+        log.info(
+            "REFERRER_TON_ADDRESS не задан — комиссии идут на кошелёк бота: %s",
+            bot_wallet.address_bounceable,
+        )
+
+        # Сохраняем адрес в .env чтобы не генерировать снова при перезапуске
+        _append_referrer_to_env(bot_wallet.address_bounceable)
+
+    log.info("Бот запущен. Кошелёк бота: %s", bot_wallet.address_bounceable)
     log.info("Адрес для реферальных комиссий: %s", config.referrer_address)
 
     app = build_app(config, bot_wallet)
     app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+
+def _append_referrer_to_env(address: str) -> None:
+    """Дописывает REFERRER_TON_ADDRESS в .env чтобы не спрашивать снова."""
+    env_path = ".env"
+    try:
+        try:
+            existing = open(env_path).read()
+        except FileNotFoundError:
+            existing = ""
+
+        if "REFERRER_TON_ADDRESS" not in existing:
+            with open(env_path, "a") as f:
+                f.write("\n# Автоматически добавлен при первом запуске\n")
+                f.write(f"REFERRER_TON_ADDRESS={address}\n")
+            log.info("REFERRER_TON_ADDRESS сохранён в .env")
+    except Exception as exc:
+        log.warning("Не удалось записать REFERRER_TON_ADDRESS в .env: %s", exc)
 
 
 if __name__ == "__main__":
