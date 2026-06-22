@@ -1,0 +1,7 @@
+python-telegram-bot==21.5
+tonsdk==1.0.13
+websockets>=11,<13
+python-dotenv>=1.0,<2
+aiohttp>=3.9,<4
+pyright>=1.1
+ruff>=0.4

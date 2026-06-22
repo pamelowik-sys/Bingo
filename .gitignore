@@ -1,5 +1,6 @@
-# Никогда не коммить секреты!
+# Никогда не коммить секреты и приватные ключи!
 .env
+data/
 
 # Python
 __pycache__/
@@ -9,3 +10,5 @@ venv/
 *.egg-info/
 dist/
 build/
+.mypy_cache/
+.ruff_cache/
